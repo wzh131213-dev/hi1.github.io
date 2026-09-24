@@ -1,0 +1,3929 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>独立 3D 无人机与直升机飞行游戏</title>
+<style>
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;
+    user-select:none;
+}
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#000;
+    touch-action:none;
+}
+body{
+    position:fixed;
+    inset:0;
+    font-family:Arial,Helvetica,sans-serif;
+}
+canvas{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    background:#7ca9c9;
+}
+#menu,
+#gameover,
+#pausePanel{
+    position:fixed;
+    inset:0;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(0,0,0,.28);
+}
+.panel{
+    width:min(560px,94vw);
+    color:#fff;
+    text-align:center;
+    padding:30px 24px;
+    border-radius:22px;
+    background:rgba(8,14,21,.78);
+    border:1px solid rgba(255,255,255,.2);
+    box-shadow:0 25px 80px rgba(0,0,0,.5);
+    backdrop-filter:blur(10px);
+}
+.title{
+    margin:0;
+    font-size:clamp(40px,10vw,72px);
+    letter-spacing:5px;
+    font-weight:900;
+    text-shadow:0 7px 24px rgba(0,0,0,.8);
+}
+.subtitle{
+    margin:10px 0 26px;
+    opacity:.82;
+}
+button{
+    border:0;
+    border-radius:14px;
+    padding:17px 26px;
+    min-width:220px;
+    font-size:20px;
+    font-weight:900;
+    background:#f2f6f8;
+    color:#111;
+}
+button:active{
+    transform:scale(.98);
+}
+.hint{
+    margin-top:17px;
+    font-size:13px;
+    line-height:1.7;
+    opacity:.68;
+}
+#hud{
+    position:fixed;
+    inset:0;
+    z-index:10;
+    display:none;
+    pointer-events:none;
+    color:#fff;
+}
+.top{
+    position:absolute;
+    left:12px;
+    right:12px;
+    top:max(10px,env(safe-area-inset-top));
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+}
+.box{
+    padding:9px 12px;
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:12px;
+    background:rgba(0,0,0,.34);
+    backdrop-filter:blur(8px);
+    text-shadow:0 2px 4px #000;
+}
+.box strong{
+    font-size:18px;
+}
+#mission{
+    text-align:center;
+    min-width:180px;
+}
+#missionTitle{
+    font-size:14px;
+    font-weight:900;
+}
+#missionText{
+    margin-top:3px;
+    font-size:12px;
+    opacity:.87;
+}
+#crosshair{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:34px;
+    height:34px;
+    transform:translate(-50%,-50%);
+}
+#crosshair:before,
+#crosshair:after{
+    content:"";
+    position:absolute;
+    background:rgba(255,255,255,.85);
+    box-shadow:0 0 4px #000;
+}
+#crosshair:before{
+    width:2px;
+    height:34px;
+    left:16px;
+}
+#crosshair:after{
+    width:34px;
+    height:2px;
+    top:16px;
+}
+.bottom{
+    position:absolute;
+    left:12px;
+    right:12px;
+    bottom:max(10px,env(safe-area-inset-bottom));
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+}
+.bars{
+    width:min(280px,38vw);
+    min-width:155px;
+}
+.label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    margin:0 0 4px;
+    text-shadow:0 2px 4px #000;
+}
+.bar{
+    width:100%;
+    height:11px;
+    border-radius:20px;
+    overflow:hidden;
+    margin-bottom:7px;
+    background:rgba(0,0,0,.48);
+    border:1px solid rgba(255,255,255,.16);
+}
+.fill{
+    width:100%;
+    height:100%;
+}
+#healthFill{
+    background:linear-gradient(90deg,#ef3b32,#f7b53d,#67e56a);
+}
+#fuelFill{
+    background:linear-gradient(90deg,#e7802d,#f5cf53,#50cfff);
+}
+#speed{
+    text-align:right;
+}
+#speedNumber{
+    font-size:31px;
+    font-weight:900;
+    line-height:1;
+}
+#speedUnit{
+    font-size:10px;
+    opacity:.75;
+}
+#touch{
+    position:fixed;
+    inset:0;
+    z-index:12;
+    display:none;
+    pointer-events:none;
+}
+.t{
+    position:absolute;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:68px;
+    height:68px;
+    border-radius:50%;
+    color:#fff;
+    font-size:26px;
+    font-weight:900;
+    background:rgba(0,0,0,.3);
+    border:1px solid rgba(255,255,255,.25);
+    box-shadow:0 7px 22px rgba(0,0,0,.2),inset 0 0 12px rgba(255,255,255,.05);
+    backdrop-filter:blur(6px);
+    pointer-events:auto;
+    touch-action:none;
+}
+.t:active,.t.active{
+    background:rgba(255,255,255,.24);
+    transform:scale(.96);
+}
+#up{left:88px;bottom:156px}
+#down{left:88px;bottom:72px}
+#left{left:9px;bottom:72px}
+#right{left:167px;bottom:72px}
+#forward{right:92px;bottom:156px}
+#back{right:92px;bottom:72px}
+#yawL{right:177px;bottom:72px}
+#yawR{right:7px;bottom:72px}
+#fire{
+    right:17px;
+    bottom:169px;
+    width:82px;
+    height:82px;
+    background:rgba(170,38,28,.3);
+}
+#camera{
+    right:10px;
+    top:max(78px,calc(env(safe-area-inset-top) + 62px));
+    width:60px;
+    height:60px;
+    font-size:20px;
+}
+#mapTouch{
+    right:154px;
+    top:max(78px,calc(env(safe-area-inset-top) + 62px));
+    width:60px;
+    height:60px;
+    font-size:20px;
+}
+#pause{
+    right:82px;
+    top:max(78px,calc(env(safe-area-inset-top) + 62px));
+    width:60px;
+    height:60px;
+    font-size:20px;
+}
+#message{
+    position:fixed;
+    z-index:30;
+    left:50%;
+    top:63%;
+    transform:translate(-50%,-50%);
+    color:#fff;
+    background:rgba(0,0,0,.6);
+    border:1px solid rgba(255,255,255,.15);
+    padding:13px 20px;
+    border-radius:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s;
+    font-weight:900;
+    white-space:nowrap;
+}
+#pausePanel{
+    display:none;
+}
+#pausePanel .panel{
+    width:min(420px,90vw);
+}
+
+#mapMini{
+    position:absolute;
+    right:12px;
+    top:118px;
+    width:190px;
+    height:190px;
+    border-radius:16px;
+    overflow:hidden;
+    background:rgba(7,18,24,.72);
+    border:1px solid rgba(255,255,255,.22);
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+    pointer-events:auto;
+    backdrop-filter:blur(5px);
+}
+#mapCanvas{
+    width:100%;
+    height:100%;
+    display:block;
+}
+#mapTitle{
+    position:absolute;
+    left:10px;
+    top:8px;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:1px;
+    text-shadow:0 2px 4px #000;
+    pointer-events:none;
+}
+#mapLarge{
+    position:fixed;
+    inset:0;
+    z-index:40;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(0,0,0,.72);
+}
+#mapPanel{
+    position:relative;
+    width:min(760px,94vw);
+    height:min(760px,88vh);
+    border-radius:22px;
+    overflow:hidden;
+    background:rgba(8,17,23,.96);
+    border:1px solid rgba(255,255,255,.25);
+    box-shadow:0 25px 90px rgba(0,0,0,.65);
+}
+#mapLargeCanvas{
+    width:100%;
+    height:100%;
+    display:block;
+}
+#mapLargeTitle{
+    position:absolute;
+    left:18px;
+    top:15px;
+    color:#fff;
+    font-size:18px;
+    font-weight:900;
+    text-shadow:0 2px 5px #000;
+}
+#mapClose{
+    position:absolute;
+    right:12px;
+    top:12px;
+    min-width:48px;
+    width:48px;
+    height:48px;
+    padding:0;
+    border-radius:50%;
+    font-size:24px;
+    background:rgba(255,255,255,.9);
+}
+#droneView{
+    position:fixed;
+    left:50%;
+    bottom:0;
+    width:min(390px,70vw);
+    height:105px;
+    transform:translateX(-50%);
+    z-index:11;
+    pointer-events:none;
+    display:none;
+}
+#droneView:before,
+#droneView:after{
+    content:"";
+    position:absolute;
+    bottom:-28px;
+    width:150px;
+    height:75px;
+    background:linear-gradient(145deg,#111923,#33404a);
+    border:2px solid rgba(255,255,255,.18);
+    border-radius:42% 42% 18% 18%;
+    box-shadow:0 -8px 24px rgba(0,0,0,.45);
+}
+#droneView:before{
+    left:0;
+    transform:rotate(9deg);
+}
+#droneView:after{
+    right:0;
+    transform:rotate(-9deg);
+}
+#droneLabel{
+    position:absolute;
+    left:50%;
+    bottom:28px;
+    transform:translateX(-50%);
+    padding:5px 10px;
+    border-radius:9px;
+    background:rgba(0,0,0,.55);
+    color:#fff;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:1px;
+}
+#mapToggle{
+    position:absolute;
+    right:214px;
+    top:118px;
+    width:48px;
+    height:48px;
+    min-width:48px;
+    padding:0;
+    border-radius:50%;
+    font-size:20px;
+    background:rgba(0,0,0,.42);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+}
+@media(max-width:720px){
+    #mapMini{
+        width:128px;
+        height:128px;
+        right:8px;
+        top:112px;
+    }
+    #mapToggle{
+        right:145px;
+        top:112px;
+    }
+    #mapTouch{display:flex}
+    #droneView{
+        width:270px;
+        height:75px;
+    }
+    #droneView:before,
+    #droneView:after{
+        width:105px;
+        height:55px;
+    }
+}
+
+@media(max-width:720px){
+    #touch{display:block}
+    .top{left:7px;right:7px}
+    .box{padding:7px 9px}
+    .box strong{font-size:14px}
+    #mission{min-width:130px}
+    #missionText{font-size:10px}
+    #missionTitle{font-size:12px}
+    .bars{min-width:130px;width:31vw}
+    #speedNumber{font-size:24px}
+}
+
+/* =========================
+   手机 / iPad 专用界面
+   不根据屏幕宽度判断，直接根据触摸设备判断，
+   所以 iPad 横屏或全屏也不会显示成电脑键盘版。
+   ========================= */
+body.touch-device .hint{
+    display:none;
+}
+body.touch-device .panel{
+    width:min(430px,88vw);
+    padding:24px 18px;
+}
+body.touch-device .title{
+    font-size:clamp(34px,9vw,58px);
+    letter-spacing:3px;
+}
+body.touch-device .subtitle{
+    margin:8px 0 20px;
+    font-size:14px;
+}
+body.touch-device button{
+    min-height:54px;
+    min-width:min(300px,78vw);
+    font-size:18px;
+}
+body.touch-device #touch{
+    display:block;
+}
+body.touch-device .t{
+    width:74px;
+    height:74px;
+    font-size:28px;
+}
+body.touch-device #up{left:92px;bottom:158px}
+body.touch-device #down{left:92px;bottom:70px}
+body.touch-device #left{left:8px;bottom:70px}
+body.touch-device #right{left:176px;bottom:70px}
+body.touch-device #forward{right:98px;bottom:158px}
+body.touch-device #back{right:98px;bottom:70px}
+body.touch-device #yawL{right:188px;bottom:70px}
+body.touch-device #yawR{right:8px;bottom:70px}
+body.touch-device #fire{
+    right:18px;
+    bottom:164px;
+    width:88px;
+    height:88px;
+}
+body.touch-device #camera,
+body.touch-device #mapTouch,
+body.touch-device #pause{
+    width:58px;
+    height:58px;
+    min-width:58px;
+    padding:0;
+}
+body.touch-device #camera{right:10px}
+body.touch-device #mapTouch{right:78px}
+body.touch-device #pause{right:146px}
+body.touch-device #mapMini{
+    width:150px;
+    height:150px;
+    right:8px;
+    top:112px;
+}
+body.touch-device #mapToggle{
+    right:166px;
+    top:112px;
+}
+body.touch-device #droneView{
+    width:300px;
+    height:80px;
+}
+body.touch-device #droneView:before,
+body.touch-device #droneView:after{
+    width:115px;
+    height:58px;
+}
+
+/* iPad / 手机横屏：继续使用触摸游戏布局 */
+@media (pointer: coarse) and (orientation: landscape){
+    #touch{display:block !important}
+    .hint{display:none !important}
+    .panel{width:min(430px,70vw);padding:20px 18px}
+    .title{font-size:clamp(30px,7vw,52px)}
+    .subtitle{font-size:13px;margin:6px 0 14px}
+    #touch .t{width:64px;height:64px;font-size:24px}
+    #up{left:82px;bottom:112px}
+    #down{left:82px;bottom:32px}
+    #left{left:8px;bottom:32px}
+    #right{left:156px;bottom:32px}
+    #forward{right:86px;bottom:112px}
+    #back{right:86px;bottom:32px}
+    #yawL{right:166px;bottom:32px}
+    #yawR{right:6px;bottom:32px}
+    #fire{right:15px;bottom:116px;width:74px;height:74px}
+    #mapMini{width:180px;height:180px;right:8px;top:92px}
+    #mapToggle{right:145px;top:92px}
+    #droneView{display:none !important}
+}
+
+/* 触摸设备进入全屏时，继续保持游戏视图而不是桌面式排版 */
+@media (pointer: coarse){
+    html,body{
+        width:100%;
+        height:100%;
+        min-width:0;
+        max-width:none;
+        overflow:hidden;
+        touch-action:none;
+    }
+    canvas{
+        width:100vw !important;
+        height:100vh !important;
+    }
+}
+
+
+/* 已移除任务界面 */
+[id*="mission" i], [class*="mission" i], [id*="task" i], [class*="task" i] { display:none !important; }
+</style>
+</head>
+<body>
+
+<canvas id="glCanvas"></canvas>
+
+<div id="menu">
+    <div class="panel">
+        <h1 class="title">直升机</h1>
+        <div class="subtitle">独立 3D 无人机 / 直升机飞行任务</div>
+        <button id="startBtn">开始飞行</button>
+        <div class="hint">
+            W / S 前后飞行　A / D 左右移动<br>
+            ↑ / ↓ 升降　Q / E 转向　空格开火　C 切换镜头　M 打开地图
+        </div>
+    </div>
+</div>
+
+<div id="hud">
+    <div class="top">
+        <div class="box">
+            <div>导航点：<strong id="cpText">1 / 8</strong></div>
+            <div>目标：<strong id="scoreText">0</strong></div>
+        </div>
+        
+            
+        </div>
+        <div class="box">
+            <div>高度：<strong id="altText">0</strong> m</div>
+            <div>距离：<strong id="distText">0</strong> m</div>
+        </div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <div class="bottom">
+        <div class="bars">
+            <div class="label"><span>生命</span><span id="healthText">100%</span></div>
+            <div class="bar"><div class="fill" id="healthFill"></div></div>
+            <div class="label"><span>燃料</span><span id="fuelText">100%</span></div>
+            <div class="bar"><div class="fill" id="fuelFill"></div></div>
+        </div>
+        <div id="speed" class="box">
+            <div id="speedNumber">0</div>
+            <div id="speedUnit">KM/H</div>
+        </div>
+    </div>
+</div>
+
+
+<div id="mapMini">
+    <canvas id="mapCanvas" width="520" height="520"></canvas>
+    <div id="mapTitle">战术地图</div>
+</div>
+<button id="mapToggle" type="button" aria-label="打开地图">⌖</button>
+
+<div id="droneView">
+    <div id="droneLabel">DRONE · 第一视角</div>
+</div>
+
+<div id="mapLarge">
+    <div id="mapPanel">
+        <canvas id="mapLargeCanvas" width="900" height="900"></canvas>
+        <div id="mapLargeTitle">无人机飞行区域地图</div>
+        <button id="mapClose" type="button">×</button>
+    </div>
+</div>
+
+<div id="touch">
+    <div class="t" id="up">▲</div>
+    <div class="t" id="down">▼</div>
+    <div class="t" id="left">◀</div>
+    <div class="t" id="right">▶</div>
+    <div class="t" id="forward">▲</div>
+    <div class="t" id="back">▼</div>
+    <div class="t" id="yawL">↶</div>
+    <div class="t" id="yawR">↷</div>
+    <div class="t" id="fire">●</div>
+    <div class="t" id="camera">C</div>
+    <div class="t" id="mapTouch">⌖</div>
+    <div class="t" id="pause">Ⅱ</div>
+</div>
+
+<div id="message"></div>
+
+<div id="gameover">
+    <div class="panel">
+        <h2 class="title" style="font-size:44px">任务结束</h2>
+        <div id="gameoverText" style="line-height:1.8;margin:18px 0 22px"></div>
+        <button id="restartBtn">重新飞行</button>
+    </div>
+</div>
+
+<div id="pausePanel">
+    <div class="panel">
+        <h2 style="font-size:34px;margin:0 0 24px">已暂停</h2>
+        <button id="resumeBtn">继续飞行</button>
+    </div>
+</div>
+
+<script>
+/* 触摸设备检测：iPad 横屏也按手机/平板游戏界面处理 */
+(function(){
+    const isTouchDevice =
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+        ('ontouchstart' in window) ||
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+    if(isTouchDevice){
+        document.body.classList.add('touch-device');
+    }
+})();
+(function(){
+
+"use strict";
+
+/* =========================================================
+   独立 WebGL 3D 引擎
+   不依赖 Three.js / Babylon.js / 任何 CDN
+   ========================================================= */
+
+const canvas = document.getElementById("glCanvas");
+const gl = canvas.getContext("webgl", {
+    antialias:true,
+    alpha:false,
+    depth:true,
+    powerPreference:"high-performance"
+});
+
+if(!gl){
+    document.body.innerHTML =
+        "<div style='color:white;background:#111;position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;text-align:center;padding:30px'>当前浏览器不支持 WebGL 3D。</div>";
+    return;
+}
+
+/* =========================
+   数学工具
+   ========================= */
+
+const PI = Math.PI;
+
+function clamp(v,a,b){
+    return Math.max(a,Math.min(b,v));
+}
+
+function lerp(a,b,t){
+    return a + (b-a)*t;
+}
+
+function rad(v){
+    return v * PI / 180;
+}
+
+function vec3(x,y,z){
+    return [x,y,z];
+}
+
+function add(a,b){
+    return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+}
+
+function sub(a,b){
+    return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+}
+
+function mul(a,s){
+    return [a[0]*s,a[1]*s,a[2]*s];
+}
+
+function dot(a,b){
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+
+function length3(a){
+    return Math.sqrt(dot(a,a));
+}
+
+function normalize(a){
+    const n = length3(a);
+    if(n < 0.00001) return [0,0,0];
+    return [a[0]/n,a[1]/n,a[2]/n];
+}
+
+function cross(a,b){
+    return [
+        a[1]*b[2]-a[2]*b[1],
+        a[2]*b[0]-a[0]*b[2],
+        a[0]*b[1]-a[1]*b[0]
+    ];
+}
+
+function perspective(fov,aspect,near,far){
+    const f = 1 / Math.tan(fov/2);
+    const nf = 1/(near-far);
+    return new Float32Array([
+        f/aspect,0,0,0,
+        0,f,0,0,
+        0,0,(far+near)*nf,-1,
+        0,0,(2*far*near)*nf,0
+    ]);
+}
+
+function lookAt(eye,target,up){
+    const z = normalize(sub(eye,target));
+    const x = normalize(cross(up,z));
+    const y = cross(z,x);
+
+    return new Float32Array([
+        x[0],y[0],z[0],0,
+        x[1],y[1],z[1],0,
+        x[2],y[2],z[2],0,
+        -dot(x,eye),-dot(y,eye),-dot(z,eye),1
+    ]);
+}
+
+function identity(){
+    return new Float32Array([
+        1,0,0,0,
+        0,1,0,0,
+        0,0,1,0,
+        0,0,0,1
+    ]);
+}
+
+function multiply4(a,b){
+    const out = new Float32Array(16);
+
+    for(let c=0;c<4;c++){
+        for(let r=0;r<4;r++){
+            out[c*4+r] =
+                a[0*4+r]*b[c*4+0] +
+                a[1*4+r]*b[c*4+1] +
+                a[2*4+r]*b[c*4+2] +
+                a[3*4+r]*b[c*4+3];
+        }
+    }
+
+    return out;
+}
+
+function translationMatrix(x,y,z){
+    const m = identity();
+    m[12]=x;
+    m[13]=y;
+    m[14]=z;
+    return m;
+}
+
+function scaleMatrix(x,y,z){
+    return new Float32Array([
+        x,0,0,0,
+        0,y,0,0,
+        0,0,z,0,
+        0,0,0,1
+    ]);
+}
+
+function rotationY(a){
+    const c=Math.cos(a);
+    const s=Math.sin(a);
+
+    return new Float32Array([
+        c,0,-s,0,
+        0,1,0,0,
+        s,0,c,0,
+        0,0,0,1
+    ]);
+}
+
+function rotationX(a){
+    const c=Math.cos(a);
+    const s=Math.sin(a);
+
+    return new Float32Array([
+        1,0,0,0,
+        0,c,s,0,
+        0,-s,c,0,
+        0,0,0,1
+    ]);
+}
+
+function rotationZ(a){
+    const c=Math.cos(a);
+    const s=Math.sin(a);
+
+    return new Float32Array([
+        c,s,0,0,
+        -s,c,0,0,
+        0,0,1,0,
+        0,0,0,1
+    ]);
+}
+
+function modelMatrix(position,rx,ry,rz,scale){
+    let m = translationMatrix(
+        position[0],
+        position[1],
+        position[2]
+    );
+
+    m = multiply4(m,rotationY(ry));
+    m = multiply4(m,rotationX(rx));
+    m = multiply4(m,rotationZ(rz));
+
+    if(scale){
+        m = multiply4(
+            m,
+            scaleMatrix(
+                scale[0],
+                scale[1],
+                scale[2]
+            )
+        );
+    }
+
+    return m;
+}
+
+/* =========================
+   着色器
+   ========================= */
+
+const vertexShaderSource = `
+attribute vec3 aPosition;
+attribute vec3 aNormal;
+attribute vec3 aColor;
+
+uniform mat4 uProjection;
+uniform mat4 uView;
+uniform mat4 uModel;
+
+varying vec3 vNormal;
+varying vec3 vColor;
+varying vec3 vWorldPosition;
+
+void main(){
+    vec4 world = uModel * vec4(aPosition,1.0);
+
+    vWorldPosition = world.xyz;
+    vNormal = mat3(uModel) * aNormal;
+    vColor = aColor;
+
+    gl_Position =
+        uProjection *
+        uView *
+        world;
+}
+`;
+
+const fragmentShaderSource = `
+precision mediump float;
+
+varying vec3 vNormal;
+varying vec3 vColor;
+varying vec3 vWorldPosition;
+
+uniform vec3 uCamera;
+uniform vec3 uLightDirection;
+uniform float uGlow;
+
+void main(){
+    vec3 n = normalize(vNormal);
+    vec3 l = normalize(uLightDirection);
+
+    float diffuse = max(dot(n,l),0.0);
+    float sky = 0.35;
+    float light = sky + diffuse * 0.75;
+
+    vec3 viewDir =
+        normalize(uCamera-vWorldPosition);
+
+    vec3 halfDir =
+        normalize(l+viewDir);
+
+    float spec =
+        pow(max(dot(n,halfDir),0.0),18.0) * 0.20;
+
+    vec3 finalColor =
+        vColor * light +
+        vec3(spec);
+
+    finalColor =
+        mix(
+            finalColor,
+            finalColor + vec3(0.12,0.2,0.32),
+            uGlow
+        );
+
+    gl_FragColor =
+        vec4(finalColor,1.0);
+}
+`;
+
+const simpleVertexSource = `
+attribute vec3 aPosition;
+attribute vec3 aColor;
+
+uniform mat4 uProjection;
+uniform mat4 uView;
+uniform mat4 uModel;
+
+varying vec3 vColor;
+
+void main(){
+    vColor = aColor;
+    gl_Position =
+        uProjection *
+        uView *
+        uModel *
+        vec4(aPosition,1.0);
+}
+`;
+
+const simpleFragmentSource = `
+precision mediump float;
+
+varying vec3 vColor;
+
+uniform float uAlpha;
+
+void main(){
+    gl_FragColor = vec4(vColor,uAlpha);
+}
+`;
+
+function compileShader(type,source){
+    const shader=gl.createShader(type);
+    gl.shaderSource(shader,source);
+    gl.compileShader(shader);
+
+    if(!gl.getShaderParameter(
+        shader,
+        gl.COMPILE_STATUS
+    )){
+        throw new Error(
+            gl.getShaderInfoLog(shader)
+        );
+    }
+
+    return shader;
+}
+
+function createProgram(vs,fs){
+    const p=gl.createProgram();
+
+    gl.attachShader(
+        p,
+        compileShader(
+            gl.VERTEX_SHADER,
+            vs
+        )
+    );
+
+    gl.attachShader(
+        p,
+        compileShader(
+            gl.FRAGMENT_SHADER,
+            fs
+        )
+    );
+
+    gl.linkProgram(p);
+
+    if(!gl.getProgramParameter(
+        p,
+        gl.LINK_STATUS
+    )){
+        throw new Error(
+            gl.getProgramInfoLog(p)
+        );
+    }
+
+    return p;
+}
+
+let solidProgram;
+let simpleProgram;
+
+try{
+    solidProgram =
+        createProgram(
+            vertexShaderSource,
+            fragmentShaderSource
+        );
+
+    simpleProgram =
+        createProgram(
+            simpleVertexSource,
+            simpleFragmentSource
+        );
+}catch(err){
+    document.body.innerHTML =
+        "<div style='color:white;background:#111;position:fixed;inset:0;padding:30px;font-size:18px'>" +
+        "3D 着色器创建失败。<br><br>" +
+        String(err) +
+        "</div>";
+    return;
+}
+
+/* =========================
+   几何体
+   ========================= */
+
+function createMesh(vertices,indices,program){
+    const mesh={};
+
+    mesh.program=program;
+
+    mesh.vertexBuffer=gl.createBuffer();
+    gl.bindBuffer(
+        gl.ARRAY_BUFFER,
+        mesh.vertexBuffer
+    );
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array(vertices),
+        gl.STATIC_DRAW
+    );
+
+    mesh.indexBuffer=gl.createBuffer();
+    gl.bindBuffer(
+        gl.ELEMENT_ARRAY_BUFFER,
+        mesh.indexBuffer
+    );
+    gl.bufferData(
+        gl.ELEMENT_ARRAY_BUFFER,
+        new Uint16Array(indices),
+        gl.STATIC_DRAW
+    );
+
+    mesh.indexCount=indices.length;
+
+    mesh.stride=program===solidProgram ? 9 : 6;
+
+    mesh.attributes={
+        position:gl.getAttribLocation(
+            program,
+            "aPosition"
+        ),
+        normal:program===solidProgram ?
+            gl.getAttribLocation(
+                program,
+                "aNormal"
+            ) : -1,
+        color:gl.getAttribLocation(
+            program,
+            "aColor"
+        )
+    };
+
+    mesh.uniforms={
+        projection:gl.getUniformLocation(
+            program,
+            "uProjection"
+        ),
+        view:gl.getUniformLocation(
+            program,
+            "uView"
+        ),
+        model:gl.getUniformLocation(
+            program,
+            "uModel"
+        ),
+        camera:program===solidProgram ?
+            gl.getUniformLocation(
+                program,
+                "uCamera"
+            ) : null,
+        light:program===solidProgram ?
+            gl.getUniformLocation(
+                program,
+                "uLightDirection"
+            ) : null,
+        glow:program===solidProgram ?
+            gl.getUniformLocation(
+                program,
+                "uGlow"
+            ) : null,
+        alpha:program===simpleProgram ?
+            gl.getUniformLocation(
+                program,
+                "uAlpha"
+            ) : null
+    };
+
+    return mesh;
+}
+
+function cube(color){
+    const c = color;
+
+    const positions=[
+        -1,-1,-1,
+         1,-1,-1,
+         1, 1,-1,
+        -1, 1,-1,
+        -1,-1, 1,
+         1,-1, 1,
+         1, 1, 1,
+        -1, 1, 1
+    ];
+
+    const faces=[
+        [0,1,2,3, 0,0,-1],
+        [4,7,6,5, 0,0,1],
+        [0,4,5,1, 0,-1,0],
+        [3,2,6,7, 0,1,0],
+        [1,5,6,2, 1,0,0],
+        [0,3,7,4, -1,0,0]
+    ];
+
+    const vertices=[];
+    const indices=[];
+
+    for(let f=0;f<faces.length;f++){
+        const face=faces[f];
+        const base=vertices.length/9;
+
+        for(let i=0;i<4;i++){
+            const idx=face[i];
+            vertices.push(
+                positions[idx*3+0],
+                positions[idx*3+1],
+                positions[idx*3+2],
+                face[4],
+                face[5],
+                face[6],
+                c[0],
+                c[1],
+                c[2]
+            );
+        }
+
+        indices.push(
+            base,
+            base+1,
+            base+2,
+            base,
+            base+2,
+            base+3
+        );
+    }
+
+    return createMesh(
+        vertices,
+        indices,
+        solidProgram
+    );
+}
+
+function plane(size,color){
+    const s=size/2;
+
+    const vertices=[
+        -s,0,-s,
+        0,1,0,
+        color[0],color[1],color[2],
+
+         s,0,-s,
+        0,1,0,
+        color[0],color[1],color[2],
+
+         s,0, s,
+        0,1,0,
+        color[0],color[1],color[2],
+
+        -s,0, s,
+        0,1,0,
+        color[0],color[1],color[2]
+    ];
+
+    return createMesh(
+        vertices,
+        [0,1,2,0,2,3],
+        solidProgram
+    );
+}
+
+function cylinder(radius,height,color,segments=16){
+    const vertices=[];
+    const indices=[];
+
+    for(let i=0;i<=segments;i++){
+        const a=i/segments*PI*2;
+        const x=Math.cos(a)*radius;
+        const z=Math.sin(a)*radius;
+
+        vertices.push(
+            x,-height/2,z,
+            x/radius,0,z/radius,
+            color[0],color[1],color[2]
+        );
+
+        vertices.push(
+            x,height/2,z,
+            x/radius,0,z/radius,
+            color[0],color[1],color[2]
+        );
+    }
+
+    for(let i=0;i<segments;i++){
+        const b=i*2;
+
+        indices.push(
+            b,b+1,b+3,
+            b,b+3,b+2
+        );
+    }
+
+    const bottomCenter=vertices.length/9;
+    vertices.push(
+        0,-height/2,0,
+        0,-1,0,
+        color[0],color[1],color[2]
+    );
+
+    const topCenter=vertices.length/9;
+    vertices.push(
+        0,height/2,0,
+        0,1,0,
+        color[0],color[1],color[2]
+    );
+
+    for(let i=0;i<segments;i++){
+        const a=i*2;
+        const b=((i+1)%segments)*2;
+
+        indices.push(
+            bottomCenter,
+            b,
+            a
+        );
+
+        indices.push(
+            topCenter,
+            a+1,
+            b+1
+        );
+    }
+
+    return createMesh(
+        vertices,
+        indices,
+        solidProgram
+    );
+}
+
+function sphere(radius,color,lat=12,lon=20){
+    const vertices=[];
+    const indices=[];
+
+    for(let y=0;y<=lat;y++){
+        const v=y/lat;
+        const phi=v*PI;
+
+        for(let x=0;x<=lon;x++){
+            const u=x/lon;
+            const theta=u*PI*2;
+
+            const nx=
+                Math.sin(phi)*Math.cos(theta);
+            const ny=
+                Math.cos(phi);
+            const nz=
+                Math.sin(phi)*Math.sin(theta);
+
+            vertices.push(
+                nx*radius,
+                ny*radius,
+                nz*radius,
+                nx,ny,nz,
+                color[0],color[1],color[2]
+            );
+        }
+    }
+
+    for(let y=0;y<lat;y++){
+        for(let x=0;x<lon;x++){
+            const a=y*(lon+1)+x;
+            const b=a+lon+1;
+
+            indices.push(
+                a,b,a+1,
+                b,b+1,a+1
+            );
+        }
+    }
+
+    return createMesh(
+        vertices,
+        indices,
+        solidProgram
+    );
+}
+
+function ringGeometry(radius,thickness,color,segments=64){
+    const vertices=[];
+    const indices=[];
+
+    for(let i=0;i<=segments;i++){
+        const a=i/segments*PI*2;
+        const ca=Math.cos(a);
+        const sa=Math.sin(a);
+
+        const r1=radius-thickness;
+        const r2=radius+thickness;
+
+        vertices.push(
+            ca*r1,0,sa*r1,
+            0,1,0,
+            color[0],color[1],color[2]
+        );
+
+        vertices.push(
+            ca*r2,0,sa*r2,
+            0,1,0,
+            color[0],color[1],color[2]
+        );
+    }
+
+    for(let i=0;i<segments;i++){
+        const b=i*2;
+
+        indices.push(
+            b,b+1,b+3,
+            b,b+3,b+2
+        );
+    }
+
+    return createMesh(
+        vertices,
+        indices,
+        solidProgram
+    );
+}
+
+/* =========================
+   世界数据
+   ========================= */
+
+// 无限地图地形：地形纹理采用可循环的程序化函数，
+// 这样飞出原来的区域后，地面会继续在新的区域生成。
+const INFINITE_TILE_SIZE = 12000;
+
+function terrainHeight(x,z){
+    const p = INFINITE_TILE_SIZE;
+
+    const broad=
+        Math.sin(x * Math.PI * 2 / p)*20+
+        Math.cos(z * Math.PI * 2 / p)*16;
+
+    const medium=
+        Math.sin((x+z) * Math.PI * 2 / (p/2))*7+
+        Math.cos((x-z) * Math.PI * 2 / (p/3))*5;
+
+    const small=
+        Math.sin(x * Math.PI * 2 / (p/8))*
+        Math.cos(z * Math.PI * 2 / (p/7))*3.5;
+
+    // 只在出生区域保留低地，飞远以后仍然会有连续地形。
+    const central =
+        Math.sqrt(x*x+z*z)<300 ?
+        -10:0;
+
+    return 25+broad+medium+small+central;
+}
+
+const meshes={
+    cube:cube([.5,.5,.5]),
+    cubeDark:cube([.08,.10,.12]),
+    cubeGreen:cube([.21,.38,.16]),
+    cubeBrown:cube([.27,.16,.08]),
+    cubeGray:cube([.42,.44,.45]),
+    cubeRoof:cube([.18,.19,.20]),
+    cubeGlass:cube([.10,.33,.46]),
+    trunk:cylinder(1,8,[.31,.18,.09],10),
+    treeTop:cylinder(1,10,[.10,.30,.14],10),
+    rotor:cube([.08,.10,.11]),
+    ring:ringGeometry(20,1.2,[.10,.85,1.0],72),
+    bullet:sphere(.42,[1.0,.75,.2],8,12),
+    enemy:sphere(2.8,[.55,.08,.07],10,16),
+    cloud:sphere(13,[.96,.98,1.0],10,14),
+    mountain:cylinder(1,1,[.23,.31,.25],9),
+    white:sphere(1,[1,1,1],8,12)
+};
+
+const worldObjects=[];
+const ringObjects=[];
+const enemies=[];
+const bullets=[];
+const particles=[];
+
+function addObject(
+    mesh,
+    position,
+    rotation,
+    scale,
+    options
+){
+    const o={
+        mesh:mesh,
+        position:position||[0,0,0],
+        rotation:rotation||[0,0,0],
+        scale:scale||[1,1,1],
+        glow:options&&options.glow?1:0,
+        alpha:options&&options.alpha!==undefined ?
+            options.alpha : 1,
+        type:options&&options.type ?
+            options.type : "world"
+    };
+
+    worldObjects.push(o);
+    return o;
+}
+
+function createTrees(){
+    const positions=[
+        [-820,-230,1.2],
+        [-740,-200,1],
+        [-680,-280,1.25],
+        [-620,-210,.9],
+        [-520,-360,1.1],
+        [-400,-430,1.2],
+        [430,-390,1],
+        [500,-350,1.25],
+        [600,-440,.9],
+        [680,-350,1.15],
+        [-900,160,1.15],
+        [-820,220,1],
+        [-710,180,.9],
+        [740,180,1.2],
+        [820,220,1.15],
+        [910,150,.9],
+        [900,-30,1.1],
+        [-950,-20,1.1],
+        [-730,-30,.9],
+        [350,50,.85]
+    ];
+
+    for(const p of positions){
+        const x=p[0];
+        const z=p[1];
+        const s=p[2];
+        const y=terrainHeight(x,z);
+
+        addObject(
+            meshes.trunk,
+            [x,y+4*s,z],
+            [0,0,0],
+            [s,s,s]
+        );
+
+        addObject(
+            meshes.treeTop,
+            [x,y+10*s,z],
+            [0,0,0],
+            [6*s,1.7*s,6*s]
+        );
+
+        addObject(
+            meshes.treeTop,
+            [x,y+16*s,z],
+            [0,0,0],
+            [4.5*s,1.5*s,4.5*s]
+        );
+
+        addObject(
+            meshes.treeTop,
+            [x,y+21*s,z],
+            [0,0,0],
+            [3*s,1.3*s,3*s]
+        );
+    }
+}
+
+function createBuildings(){
+    const data=[
+        [-240,-170,105,85,75,[.52,.55,.57]],
+        [-95,-205,72,60,60,[.40,.43,.46]],
+        [80,-180,118,78,105,[.65,.61,.50]],
+        [220,-185,70,55,53,[.48,.34,.32]],
+        [-300,280,94,74,68,[.59,.55,.45]],
+        [380,250,108,72,86,[.62,.65,.67]]
+    ];
+
+    for(const b of data){
+        const x=b[0];
+        const z=b[1];
+        const w=b[2];
+        const d=b[3];
+        const h=b[4];
+        const color=b[5];
+        const y=terrainHeight(x,z);
+
+        addObject(
+            cube(color),
+            [x,y+h/2,z],
+            [0,0,0],
+            [w/2,h/2,d/2]
+        );
+
+        addObject(
+            meshes.cubeRoof,
+            [x,y+h+3,z],
+            [0,0,0],
+            [w*.53,3,d*.53]
+        );
+
+        addObject(
+            meshes.cubeGlass,
+            [x+w*.505,y+h*.52,z],
+            [0,0,0],
+            [2,h*.12,d*.22]
+        );
+
+        addObject(
+            meshes.cubeGlass,
+            [x-w*.505,y+h*.52,z],
+            [0,0,0],
+            [2,h*.12,d*.22]
+        );
+    }
+}
+
+function createMountains(){
+    const data=[
+        [-1450,-1100,470,410],
+        [-920,-1470,510,420],
+        [-260,-1580,610,490],
+        [480,-1490,450,360],
+        [1050,-1200,530,450],
+        [1450,-740,430,370],
+        [-1490,100,430,400],
+        [1500,100,470,420]
+    ];
+
+    for(const m of data){
+        const x=m[0];
+        const z=m[1];
+        const h=m[2];
+        const r=m[3];
+
+        addObject(
+            meshes.mountain,
+            [x,10+h/2,z],
+            [0,0,0],
+            [r,h/2,r]
+        );
+
+        addObject(
+            meshes.mountain,
+            [x,10+h*.91,z],
+            [0,0,0],
+            [r*.32,h*.09,r*.32]
+        );
+    }
+}
+
+function createClouds(){
+    const data=[
+        [-700,520,-900,1.5],
+        [150,570,-1120,1.9],
+        [900,480,-760,1.5],
+        [-1180,610,-300,1.7],
+        [1150,600,300,1.4]
+    ];
+
+    for(const d of data){
+        const x=d[0];
+        const y=d[1];
+        const z=d[2];
+        const s=d[3];
+
+        for(const p of [
+            [0,0,0,1],
+            [18,4,0,.85],
+            [-18,2,0,.82],
+            [5,8,3,.9],
+            [-7,7,2,.75]
+        ]){
+            addObject(
+                meshes.cloud,
+                [x+p[0]*s,y+p[1]*s,z+p[2]*s],
+                [0,0,0],
+                [s*p[3]*1.1,s*p[3]*.6,s*p[3]*.8]
+            );
+        }
+    }
+}
+
+function createLake(){
+    const lake=plane(720,[.08,.36,.50]);
+
+    lake.position=[-450,13,-560];
+    lake.scale=[1.65,1,0.82];
+
+    worldObjects.push(lake);
+
+    const shore=plane(790,[.55,.52,.31]);
+    shore.position=[-450,11,-560];
+    shore.scale=[1.65,.8,.82];
+    worldObjects.push(shore);
+}
+
+// 无限世界地形瓦片
+const infiniteTerrainTiles=[];
+
+function createTerrain(){
+    const size=INFINITE_TILE_SIZE;
+    const step=180;
+    const vertices=[];
+    const indices=[];
+
+    for(let z=0;z<=step;z++){
+        const pz=-size/2+(z/step)*size;
+
+        for(let x=0;x<=step;x++){
+            const px=-size/2+(x/step)*size;
+            const y=terrainHeight(px,pz);
+
+            vertices.push(
+                px,y,pz,
+                0,1,0,
+                .24 + clamp(y/180,.0,.45),
+                .40 + clamp(y/220,.0,.32),
+                .15 + clamp(y/260,.0,.28)
+            );
+        }
+    }
+
+    for(let z=0;z<step;z++){
+        for(let x=0;x<step;x++){
+            const a=z*(step+1)+x;
+            const b=a+1;
+            const c=a+(step+1);
+            const d=c+1;
+
+            indices.push(
+                a,c,b,
+                b,c,d
+            );
+        }
+    }
+
+    const terrain=createMesh(
+        vertices,
+        indices,
+        solidProgram
+    );
+
+    // 3×3 无缝地形瓦片。
+    // 玩家移动到新的区域后，瓦片会跟随玩家重新排列，
+    // 因此不会再出现“地图边缘”。
+    for(let row=-2;row<=2;row++){
+        for(let col=-2;col<=2;col++){
+            const tile={
+                mesh:terrain,
+                position:[
+                    col*size,
+                    0,
+                    row*size
+                ],
+                rotation:[0,0,0],
+                scale:[1,1,1],
+                glow:0,
+                alpha:1,
+                type:"terrain"
+            };
+
+            worldObjects.push(tile);
+            infiniteTerrainTiles.push(tile);
+        }
+    }
+}
+
+function updateInfiniteTerrain(){
+    if(!infiniteTerrainTiles.length)return;
+
+    const size=INFINITE_TILE_SIZE;
+
+    // 把玩家所在的区域作为中心。
+    // floor 后锁定到固定网格，避免高速飞行时地面抖动。
+    const centerX=
+        Math.floor(helicopter.position[0]/size)*size;
+
+    const centerZ=
+        Math.floor(helicopter.position[2]/size)*size;
+
+    let index=0;
+
+    for(let row=-2;row<=2;row++){
+        for(let col=-2;col<=2;col++){
+            const tile=infiniteTerrainTiles[index++];
+
+            tile.position[0]=centerX+col*size;
+            tile.position[2]=centerZ+row*size;
+        }
+    }
+}
+
+/* =========================
+   直升机
+   ========================= */
+
+const heliParts=[];
+
+function makeHeliPart(
+    mesh,
+    localPosition,
+    localRotation,
+    localScale
+){
+    const o={
+        mesh:mesh,
+        position:localPosition,
+        rotation:localRotation||[0,0,0],
+        scale:localScale||[1,1,1]
+    };
+
+    heliParts.push(o);
+    return o;
+}
+
+makeHeliPart(
+    sphere(5,[.22,.25,.28],14,20),
+    [0,0,0],
+    [0,0,PI/2],
+    [1.35,.85,.85]
+);
+
+makeHeliPart(
+    sphere(4.5,[.05,.20,.27],12,18),
+    [3,1,0],
+    [0,0,0],
+    [1.15,.72,.75]
+);
+
+makeHeliPart(
+    cylinder(1.4,18,[.18,.21,.23],12),
+    [-11,0,0],
+    [0,0,PI/2],
+    [1,1,1]
+);
+
+makeHeliPart(
+    cylinder(1.0,5,[.08,.09,.10],10),
+    [-21,0,0],
+    [0,0,PI/2]
+);
+
+makeHeliPart(
+    meshes.rotor,
+    [0,5.5,0],
+    [0,0,0],
+    [12,.12,.35]
+);
+
+makeHeliPart(
+    meshes.rotor,
+    [0,5.5,0],
+    [0,PI/2,0],
+    [12,.12,.35]
+);
+
+makeHeliPart(
+    meshes.rotor,
+    [-20.9,1.2,0],
+    [0,0,0],
+    [.3,3.2,.2]
+);
+
+makeHeliPart(
+    meshes.rotor,
+    [-20.9,1.2,0],
+    [0,0,PI/2],
+    [.3,3.2,.2]
+);
+
+makeHeliPart(
+    meshes.cubeDark,
+    [0,-3.7,-3],
+    [PI/2,0,0],
+    [5.8,.18,.18]
+);
+
+makeHeliPart(
+    meshes.cubeDark,
+    [0,-3.7,3],
+    [PI/2,0,0],
+    [5.8,.18,.18]
+);
+
+makeHeliPart(
+    meshes.cubeDark,
+    [-4.2,-2.8,-3],
+    [0,0,.18],
+    [.18,2,.18]
+);
+
+makeHeliPart(
+    meshes.cubeDark,
+    [4.2,-2.8,-3],
+    [0,0,.18],
+    [.18,2,.18]
+);
+
+makeHeliPart(
+    meshes.cubeDark,
+    [-4.2,-2.8,3],
+    [0,0,.18],
+    [.18,2,.18]
+);
+
+makeHeliPart(
+    meshes.cubeDark,
+    [4.2,-2.8,3],
+    [0,0,.18],
+    [.18,2,.18]
+);
+
+makeHeliPart(
+    meshes.cubeGlass,
+    [4.7,-.3,0],
+    [0,0,0],
+    [.25,1.7,.82]
+);
+
+let helicopter={
+    position:[0,88,160],
+    velocity:[0,0,0],
+    yaw:PI,
+    pitch:0,
+    roll:0
+};
+
+let rotorAngle=0;
+
+// 无人机最高速度：2000 千米/分钟（内部物理速度换算为 m/s）
+const MAX_SPEED = 2000 * 1000 / 60;
+
+/* =========================
+   导航点
+   ========================= */
+
+const checkpointPositions=[
+    [0,105,0],
+    [260,130,-250],
+    [480,180,-620],
+    [120,150,-1050],
+    [-380,180,-1120],
+    [-760,140,-760],
+    [-600,110,-280],
+    [-250,110,140]
+];
+
+for(let i=0;i<checkpointPositions.length;i++){
+    const pos=checkpointPositions[i];
+
+    ringObjects.push({
+        position:pos.slice(),
+        mesh:ringObjects.length ? meshes.ring : meshes.ring,
+        active:i===0,
+        spin:i*.5,
+        baseY:pos[1]
+    });
+}
+
+/* =========================
+   敌机
+   ========================= */
+
+const enemyStart=[
+    [230,110,-190],
+    [520,160,-470],
+    [20,140,-700],
+    [-260,160,-860],
+    [-610,130,-560],
+    [-500,120,-130]
+];
+
+function spawnEnemy(pos){
+    enemies.push({
+        position:pos.slice(),
+        velocity:[0,0,0],
+        phase:Math.random()*PI*2,
+        hp:2,
+        alive:true,
+        yaw:0
+    });
+}
+
+/* =========================
+   游戏状态
+   ========================= */
+
+const keys={
+    forward:false,
+    back:false,
+    left:false,
+    right:false,
+    up:false,
+    down:false,
+    yawLeft:false,
+    yawRight:false,
+    fire:false
+};
+
+let gameStarted=false;
+let paused=false;
+let cameraMode=0;
+let health=Infinity;
+let fuel=Infinity;
+let score=0;
+let checkpointIndex=0;
+let cooldown=0;
+let worldTime=0;
+let messageTimer=0;
+let mapLargeOpen=false;
+
+/* =========================
+   输入
+   ========================= */
+
+window.addEventListener("keydown",function(e){
+
+    const k=e.key.toLowerCase();
+
+    if([
+        "w","a","s","d",
+        "q","e"," ",
+        "arrowup","arrowdown",
+        "arrowleft","arrowright"
+    ].includes(k)){
+        e.preventDefault();
+    }
+
+    if(k==="w")keys.forward=true;
+    if(k==="s")keys.back=true;
+    if(k==="a")keys.left=true;
+    if(k==="d")keys.right=true;
+    if(k==="arrowup")keys.up=true;
+    if(k==="arrowdown")keys.down=true;
+    if(k==="q")keys.yawLeft=true;
+    if(k==="e")keys.yawRight=true;
+
+    if(k===" "){
+        keys.fire=true;
+        fire();
+    }
+
+    if(k==="c"){
+        toggleCamera();
+    }
+
+    if(k==="p"){
+        togglePause();
+    }
+
+    if(k==="m"){
+        toggleMap();
+    }
+});
+
+window.addEventListener("keyup",function(e){
+    const k=e.key.toLowerCase();
+
+    if(k==="w")keys.forward=false;
+    if(k==="s")keys.back=false;
+    if(k==="a")keys.left=false;
+    if(k==="d")keys.right=false;
+    if(k==="arrowup")keys.up=false;
+    if(k==="arrowdown")keys.down=false;
+    if(k==="q")keys.yawLeft=false;
+    if(k==="e")keys.yawRight=false;
+    if(k===" ")keys.fire=false;
+});
+
+function bindTouch(id,key){
+    const el=document.getElementById(id);
+
+    function down(e){
+        e.preventDefault();
+        keys[key]=true;
+        el.classList.add("active");
+        if(e.pointerId!==undefined){
+            try{
+                el.setPointerCapture(e.pointerId);
+            }catch(_){}
+        }
+    }
+
+    function up(e){
+        e.preventDefault();
+        keys[key]=false;
+        el.classList.remove("active");
+    }
+
+    el.addEventListener(
+        "pointerdown",
+        down,
+        {passive:false}
+    );
+
+    el.addEventListener(
+        "pointerup",
+        up,
+        {passive:false}
+    );
+
+    el.addEventListener(
+        "pointercancel",
+        up,
+        {passive:false}
+    );
+}
+
+bindTouch("up","up");
+bindTouch("down","down");
+bindTouch("left","left");
+bindTouch("right","right");
+bindTouch("forward","forward");
+bindTouch("back","back");
+bindTouch("yawL","yawLeft");
+bindTouch("yawR","yawRight");
+
+document.getElementById("fire").addEventListener(
+    "pointerdown",
+    function(e){
+        e.preventDefault();
+        keys.fire=true;
+        fire();
+        this.classList.add("active");
+    },
+    {passive:false}
+);
+
+function stopFire(e){
+    e.preventDefault();
+    keys.fire=false;
+    document.getElementById("fire")
+        .classList.remove("active");
+}
+
+document.getElementById("fire").addEventListener(
+    "pointerup",
+    stopFire,
+    {passive:false}
+);
+
+document.getElementById("fire").addEventListener(
+    "pointercancel",
+    stopFire,
+    {passive:false}
+);
+
+document.getElementById("camera").addEventListener(
+    "pointerdown",
+    function(e){
+        e.preventDefault();
+        toggleCamera();
+    },
+    {passive:false}
+);
+
+document.getElementById("mapTouch").addEventListener(
+    "pointerdown",
+    function(e){
+        e.preventDefault();
+        toggleMap();
+    },
+    {passive:false}
+);
+
+document.getElementById("mapToggle").addEventListener(
+    "pointerdown",
+    function(e){
+        e.preventDefault();
+        toggleMap();
+    },
+    {passive:false}
+);
+
+document.getElementById("mapClose").addEventListener(
+    "pointerdown",
+    function(e){
+        e.preventDefault();
+        closeMap();
+    },
+    {passive:false}
+);
+
+document.getElementById("pause").addEventListener(
+    "pointerdown",
+    function(e){
+        e.preventDefault();
+        togglePause();
+    },
+    {passive:false}
+);
+
+document.addEventListener(
+    "gesturestart",
+    function(e){e.preventDefault()},
+    {passive:false}
+);
+
+document.addEventListener(
+    "gesturechange",
+    function(e){e.preventDefault()},
+    {passive:false}
+);
+
+document.addEventListener(
+    "gestureend",
+    function(e){e.preventDefault()},
+    {passive:false}
+);
+
+let lastTouchEnd=0;
+
+document.addEventListener(
+    "touchend",
+    function(e){
+        const now=Date.now();
+
+        if(now-lastTouchEnd<300){
+            e.preventDefault();
+        }
+
+        lastTouchEnd=now;
+    },
+    {passive:false}
+);
+
+/* =========================
+   游戏功能
+   ========================= */
+
+function resetGame(){
+    helicopter={
+        position:[0,88,160],
+        velocity:[0,0,0],
+        yaw:PI,
+        pitch:0,
+        roll:0
+    };
+
+    health=100;
+    fuel=100;
+    score=0;
+    checkpointIndex=0;
+    cooldown=0;
+
+    bullets.length=0;
+    particles.length=0;
+    enemies.length=0;
+
+    for(const p of enemyStart){
+        spawnEnemy(p);
+    }
+
+    updateHUD();
+}
+
+function startGame(){
+    resetGame();
+
+    gameStarted=true;
+    paused=false;
+
+    document.getElementById("menu")
+        .style.display="none";
+
+    document.getElementById("gameover")
+        .style.display="none";
+
+    document.getElementById("pausePanel")
+        .style.display="none";
+
+    closeMap();
+
+    document.getElementById("droneView").style.display=
+        cameraMode===2 ? "block" : "none";
+
+    document.getElementById("hud")
+        .style.display="block";
+
+    updateMap();
+}
+
+function endGame(reason){
+    gameStarted=false;
+    paused=false;
+
+    document.getElementById("hud")
+        .style.display="none";
+
+    closeMap();
+
+    document.getElementById("droneView").style.display="none";
+
+    document.getElementById("gameover")
+        .style.display="flex";
+
+    document.getElementById("gameoverText").innerHTML=
+        reason+
+        "<br><br>"+
+        "通过导航点："+checkpointIndex+
+        " / "+checkpointPositions.length+
+        "<br>击落目标："+score+
+        "<br>剩余燃料："+"100%";
+}
+
+function togglePause(){
+    if(!gameStarted)return;
+
+    paused=!paused;
+
+    document.getElementById("pausePanel")
+        .style.display=paused?"flex":"none";
+}
+
+function toggleCamera(){
+    cameraMode=(cameraMode+1)%3;
+
+    document.getElementById("droneView").style.display=
+        cameraMode===2 ? "block" : "none";
+
+    showMessage(
+        cameraMode===0 ?
+        "第三人称镜头":
+        cameraMode===1 ?
+        "近距离跟随镜头":
+        "无人机第一视角"
+    );
+}
+
+
+function worldToMap(x,z,size){
+    const limit=6000;
+    return [
+        size*.5 + (x/limit)*(size*.44),
+        size*.5 + (z/limit)*(size*.44)
+    ];
+}
+
+function drawTacticalMap(canvas, large){
+    const ctx=canvas.getContext("2d");
+    if(!ctx)return;
+
+    const w=canvas.width;
+    const h=canvas.height;
+    const size=Math.min(w,h);
+
+    ctx.clearRect(0,0,w,h);
+
+    ctx.fillStyle="#183126";
+    ctx.fillRect(0,0,w,h);
+
+    // 地形分区
+    for(let i=0;i<9;i++){
+        const a=i/9;
+        ctx.strokeStyle="rgba(174,205,151,.16)";
+        ctx.lineWidth=1.5;
+        ctx.beginPath();
+        ctx.arc(w*.5,h*.5,size*(.08+i*.055),0,Math.PI*2);
+        ctx.stroke();
+    }
+
+    // 湖泊
+    const lake=worldToMap(-450,-560,size);
+    ctx.save();
+    ctx.translate(lake[0],lake[1]);
+    ctx.rotate(-.12);
+    ctx.fillStyle="rgba(35,135,174,.9)";
+    ctx.beginPath();
+    ctx.ellipse(0,0,size*.19,size*.12,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle="rgba(126,221,255,.65)";
+    ctx.stroke();
+    ctx.restore();
+
+    // 道路 / 航线
+    ctx.strokeStyle="rgba(218,198,137,.55)";
+    ctx.lineWidth=large?5:2;
+    ctx.setLineDash([large?14:6,large?10:5]);
+    ctx.beginPath();
+    const route=[
+        [-850,650],
+        [-500,250],
+        [-250,-170],
+        [80,-180],
+        [380,250],
+        [850,650]
+    ];
+    route.forEach((p,i)=>{
+        const q=worldToMap(p[0],p[1],size);
+        if(i===0)ctx.moveTo(q[0],q[1]);
+        else ctx.lineTo(q[0],q[1]);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 建筑区域
+    const buildings=[
+        [-240,-170,100,80],
+        [-95,-205,70,55],
+        [80,-180,110,78],
+        [220,-185,68,55],
+        [-300,280,92,72],
+        [380,250,105,70]
+    ];
+    for(const b of buildings){
+        const q=worldToMap(b[0],b[1],size);
+        const sx=b[2]/2000*size*.44;
+        const sy=b[3]/2000*size*.44;
+        ctx.fillStyle="rgba(198,207,201,.8)";
+        ctx.fillRect(q[0]-sx,q[1]-sy,sx*2,sy*2);
+    }
+
+    // 导航点
+    for(let i=0;i<checkpointPositions.length;i++){
+        const cp=checkpointPositions[i];
+        const q=worldToMap(cp[0],cp[2],size);
+        const active=i===checkpointIndex;
+        ctx.beginPath();
+        ctx.arc(q[0],q[1],active?(large?12:5):(large?6:3),0,Math.PI*2);
+        ctx.fillStyle=active?"#59e7ff":"rgba(111,198,220,.5)";
+        ctx.fill();
+        if(active){
+            ctx.strokeStyle="rgba(255,255,255,.9)";
+            ctx.lineWidth=large?3:1;
+            ctx.stroke();
+        }
+    }
+
+    // 敌机
+    for(const e of enemies){
+        if(!e.alive)continue;
+        const q=worldToMap(e.position[0],e.position[2],size);
+        ctx.fillStyle="#ef5145";
+        ctx.beginPath();
+        ctx.moveTo(q[0],q[1]- (large?8:4));
+        ctx.lineTo(q[0]+(large?7:3),q[1]+(large?6:3));
+        ctx.lineTo(q[0]-(large?7:3),q[1]+(large?6:3));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // 玩家 / 无人机
+    const p=worldToMap(helicopter.position[0],helicopter.position[2],size);
+    ctx.save();
+    ctx.translate(p[0],p[1]);
+    ctx.rotate(-helicopter.yaw);
+    ctx.fillStyle="#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(0,-(large?13:7));
+    ctx.lineTo(large?9:5,large?9:5);
+    ctx.lineTo(0,large?5:3);
+    ctx.lineTo(-(large?9:5),large?9:5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle="#4fdfff";
+    ctx.lineWidth=large?3:1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    if(large){
+        ctx.fillStyle="rgba(255,255,255,.8)";
+        ctx.font="700 16px Arial";
+        ctx.fillText("N",w*.5-5,28);
+        ctx.fillText("无人机",22,h-24);
+        ctx.fillText("红色：目标",22,h-48);
+        ctx.fillText("蓝色：导航点",22,h-72);
+    }
+}
+
+function updateMap(){
+    if(!gameStarted)return;
+    drawTacticalMap(
+        document.getElementById("mapCanvas"),
+        false
+    );
+    if(mapLargeOpen){
+        drawTacticalMap(
+            document.getElementById("mapLargeCanvas"),
+            true
+        );
+    }
+}
+
+function toggleMap(){
+    mapLargeOpen=!mapLargeOpen;
+    document.getElementById("mapLarge").style.display=
+        mapLargeOpen ? "flex" : "none";
+    updateMap();
+}
+
+function closeMap(){
+    mapLargeOpen=false;
+    document.getElementById("mapLarge").style.display="none";
+}
+
+function showMessage(text){
+    const el=document.getElementById("message");
+    el.textContent=text;
+    el.style.opacity="1";
+
+    clearTimeout(messageTimer);
+
+    messageTimer=setTimeout(
+        function(){
+            el.style.opacity="0";
+        },
+        1300
+    );
+}
+
+/* =========================
+   射击
+   ========================= */
+
+function forwardVector(){
+    return [
+        -Math.sin(helicopter.yaw),
+        0,
+        -Math.cos(helicopter.yaw)
+    ];
+}
+
+function rightVector(){
+    return [
+        Math.cos(helicopter.yaw),
+        0,
+        -Math.sin(helicopter.yaw)
+    ];
+}
+
+function fire(){
+    if(!gameStarted || paused)return;
+    if(cooldown>0)return;
+
+    cooldown=.18;
+
+    const f=forwardVector();
+
+    const start=[
+        helicopter.position[0]+f[0]*9,
+        helicopter.position[1]+2,
+        helicopter.position[2]+f[2]*9
+    ];
+
+    bullets.push({
+        position:start,
+        velocity:mul(f,260),
+        life:2.8
+    });
+}
+
+/* =========================
+   粒子
+   ========================= */
+
+function makeParticle(position,velocity,life,colorScale){
+    particles.push({
+        position:position.slice(),
+        velocity:velocity.slice(),
+        life:life,
+        maxLife:life,
+        scale:colorScale
+    });
+}
+
+function explosion(position,count){
+    for(let i=0;i<count;i++){
+        const v=normalize([
+            Math.random()-.5,
+            Math.random()-.15,
+            Math.random()-.5
+        ]);
+
+        makeParticle(
+            position,
+            mul(
+                v,
+                15+Math.random()*30
+            ),
+            .5+Math.random()*.8,
+            .5+Math.random()*1.5
+        );
+    }
+}
+
+/* =========================
+   飞行物理
+   ========================= */
+
+function updateFlight(dt){
+
+    const f=forwardVector();
+    const r=rightVector();
+
+    let desired=[0,0,0];
+
+    if(keys.forward){
+        desired=add(
+            desired,
+            mul(f,2000)
+        );
+    }
+
+    if(keys.back){
+        desired=add(
+            desired,
+            mul(f,-1200)
+        );
+    }
+
+    if(keys.left){
+        desired=add(
+            desired,
+            mul(r,-1500)
+        );
+    }
+
+    if(keys.right){
+        desired=add(
+            desired,
+            mul(r,1500)
+        );
+    }
+
+    if(keys.up){
+        desired[1]+=1000;
+    }
+
+    if(keys.down){
+        desired[1]-=1000;
+    }
+
+    const horizontalSmooth=
+        1-Math.pow(.018,dt);
+
+    const verticalSmooth=
+        1-Math.pow(.04,dt);
+
+    helicopter.velocity[0]=lerp(
+        helicopter.velocity[0],
+        desired[0],
+        horizontalSmooth
+    );
+
+    helicopter.velocity[2]=lerp(
+        helicopter.velocity[2],
+        desired[2],
+        horizontalSmooth
+    );
+
+    helicopter.velocity[1]=lerp(
+        helicopter.velocity[1],
+        desired[1],
+        verticalSmooth
+    );
+
+    // 限制水平最高速度为 2000 千米/分钟
+    const horizontalSpeed = Math.sqrt(
+        helicopter.velocity[0] * helicopter.velocity[0] +
+        helicopter.velocity[2] * helicopter.velocity[2]
+    );
+
+    if(horizontalSpeed > MAX_SPEED){
+        const speedScale = MAX_SPEED / horizontalSpeed;
+        helicopter.velocity[0] *= speedScale;
+        helicopter.velocity[2] *= speedScale;
+    }
+
+    helicopter.position=add(
+        helicopter.position,
+        mul(helicopter.velocity,dt)
+    );
+
+    const ground=
+        terrainHeight(
+            helicopter.position[0],
+            helicopter.position[2]
+        );
+
+    const minimumHeight=ground+18;
+
+    if(
+        helicopter.position[1]<
+        minimumHeight
+    ){
+        helicopter.position[1]=minimumHeight;
+        helicopter.velocity[1]=Math.max(
+            0,
+            helicopter.velocity[1]
+        );
+    }
+
+    helicopter.position[1]=clamp(
+        helicopter.position[1],
+        18,
+        680
+    );
+
+    let yawRate=0;
+
+    if(keys.yawLeft)yawRate+=1.35;
+    if(keys.yawRight)yawRate-=1.35;
+
+    helicopter.yaw+=yawRate*dt;
+
+    const hspeed=
+        Math.sqrt(
+            helicopter.velocity[0]*
+            helicopter.velocity[0]+
+            helicopter.velocity[2]*
+            helicopter.velocity[2]
+        );
+
+    const pitchTarget=
+        clamp(
+            (keys.forward?.11:0)-
+            (keys.back?.09:0)-
+            helicopter.velocity[1]*.008,
+            -.4,
+            .4
+        );
+
+    const rollTarget=
+        clamp(
+            (keys.right?.30:0)-
+            (keys.left?.30:0),
+            -.32,
+            .32
+        );
+
+    helicopter.pitch=lerp(
+        helicopter.pitch,
+        pitchTarget,
+        1-Math.pow(.003,dt)
+    );
+
+    helicopter.roll=lerp(
+        helicopter.roll,
+        rollTarget,
+        1-Math.pow(.003,dt)
+    );
+
+    // 无限燃料：不会消耗燃料，也不会因为燃料耗尽结束游戏。
+    fuel=Infinity;
+    health=Infinity;
+
+    cooldown=Math.max(
+        0,
+        cooldown-dt
+    );
+}
+
+/* =========================
+   导航点
+   ========================= */
+
+function updateCheckpoints(dt){
+
+    for(let i=0;i<ringObjects.length;i++){
+
+        const r=ringObjects[i];
+
+        r.active =
+            i===checkpointIndex;
+
+        r.spin+=dt*.6;
+
+        r.currentY=
+            r.baseY+
+            Math.sin(
+                worldTime*1.7+
+                i*.7
+            )*3;
+
+        if(!r.active)continue;
+
+        const d=
+            length3(
+                sub(
+                    helicopter.position,
+                    r.position
+                )
+            );
+
+        if(d<27){
+            checkpointIndex++;
+
+            if(
+                checkpointIndex>=
+                checkpointPositions.length
+            ){
+                endGame("任务完成");
+                return;
+            }
+
+            showMessage(
+                "通过导航点 "+
+                checkpointIndex+
+                " / "+
+                checkpointPositions.length
+            );
+        }
+    }
+}
+
+/* =========================
+   敌机逻辑
+   ========================= */
+
+function updateEnemies(dt){
+
+    for(const e of enemies){
+
+        if(!e.alive)continue;
+
+        const toPlayer=
+            sub(
+                helicopter.position,
+                e.position
+            );
+
+        const dist=
+            length3(toPlayer);
+
+        const direction=
+            normalize(toPlayer);
+
+        if(dist>700){
+            e.velocity=mul(
+                direction,
+                12
+            );
+        }else{
+            const desired=mul(
+                direction,
+                20
+            );
+
+            e.velocity=[
+                lerp(e.velocity[0],desired[0],dt*1.5),
+                lerp(e.velocity[1],desired[1],dt*1.5),
+                lerp(e.velocity[2],desired[2],dt*1.5)
+            ];
+        }
+
+        e.position=add(
+            e.position,
+            mul(e.velocity,dt)
+        );
+
+        e.position[1]+=
+            Math.sin(
+                worldTime*2+
+                e.phase
+            )*
+            dt*4;
+
+        const ground=
+            terrainHeight(
+                e.position[0],
+                e.position[2]
+            );
+
+        e.position[1]=Math.max(
+            e.position[1],
+            ground+25
+        );
+
+        if(length3(e.velocity)>.1){
+            e.yaw=
+                Math.atan2(
+                    -e.velocity[0],
+                    -e.velocity[2]
+                );
+        }
+
+        // 无限血量：敌机靠近时不扣血，也不会被击落。
+    }
+}
+
+/* =========================
+   子弹
+   ========================= */
+
+function updateBullets(dt){
+
+    for(
+        let i=bullets.length-1;
+        i>=0;
+        i--
+    ){
+
+        const b=bullets[i];
+
+        b.position=add(
+            b.position,
+            mul(b.velocity,dt)
+        );
+
+        b.life-=dt;
+
+        let hit=false;
+
+        for(const e of enemies){
+            if(!e.alive)continue;
+
+            const d=
+                length3(
+                    sub(
+                        b.position,
+                        e.position
+                    )
+                );
+
+            if(d<6){
+                e.hp--;
+                hit=true;
+
+                if(e.hp<=0){
+                    e.alive=false;
+                    score++;
+                    explosion(
+                        e.position,
+                        25
+                    );
+                }else{
+                    explosion(
+                        b.position,
+                        7
+                    );
+                }
+
+                break;
+            }
+        }
+
+        if(
+            hit ||
+            b.life<=0 ||
+            length3(b.position)>5000
+        ){
+            bullets.splice(i,1);
+        }
+    }
+}
+
+/* =========================
+   粒子
+   ========================= */
+
+function updateParticles(dt){
+
+    for(
+        let i=particles.length-1;
+        i>=0;
+        i--
+    ){
+
+        const p=particles[i];
+
+        p.position=add(
+            p.position,
+            mul(p.velocity,dt)
+        );
+
+        p.velocity[1]-=16*dt;
+
+        p.life-=dt;
+
+        if(p.life<=0){
+            particles.splice(i,1);
+        }
+    }
+}
+
+/* =========================
+   HUD
+   ========================= */
+
+function updateHUD(){
+
+    updateInfiniteTerrain();
+
+    const ground=
+        terrainHeight(
+            helicopter.position[0],
+            helicopter.position[2]
+        );
+
+    const altitude=
+        Math.max(
+            0,
+            helicopter.position[1]-ground
+        );
+
+    const speed=
+        length3(
+            helicopter.velocity
+        )*3.6;
+
+    let dist=0;
+
+    if(checkpointIndex<
+       checkpointPositions.length
+    ){
+        dist=
+            length3(
+                sub(
+                    helicopter.position,
+                    checkpointPositions[
+                        checkpointIndex
+                    ]
+                )
+            );
+    }
+
+    document.getElementById(
+        "cpText"
+    ).textContent=
+        Math.min(
+            checkpointIndex+1,
+            checkpointPositions.length
+        )+
+        " / "+
+        checkpointPositions.length;
+
+    document.getElementById(
+        "scoreText"
+    ).textContent=
+        score;
+
+    document.getElementById(
+        "altText"
+    ).textContent=
+        Math.round(altitude);
+
+    document.getElementById(
+        "distText"
+    ).textContent=
+        Math.round(dist);
+
+    document.getElementById(
+        "healthText"
+    ).textContent=
+        "100%";
+
+    document.getElementById(
+        "fuelText"
+    ).textContent=
+        "100%";
+
+    document.getElementById(
+        "healthFill"
+    ).style.width=
+        "100%";
+
+    document.getElementById(
+        "fuelFill"
+    ).style.width=
+        "100%";
+
+    document.getElementById(
+        "speedNumber"
+    ).textContent=
+        Math.round(speed);
+
+    updateMap();
+}
+
+/* =========================
+   相机
+   ========================= */
+
+let camera={
+    position:[0,120,360],
+    target:[0,70,0]
+};
+
+function updateCamera(dt){
+
+    const f=forwardVector();
+
+    let desired;
+    let target;
+
+    if(cameraMode===0){
+        desired=[
+            helicopter.position[0]-f[0]*48,
+            helicopter.position[1]+22,
+            helicopter.position[2]-f[2]*48
+        ];
+
+        target=[
+            helicopter.position[0]+f[0]*8,
+            helicopter.position[1]+2,
+            helicopter.position[2]+f[2]*8
+        ];
+    }else if(cameraMode===1){
+        desired=[
+            helicopter.position[0]-f[0]*22,
+            helicopter.position[1]+9,
+            helicopter.position[2]-f[2]*22
+        ];
+
+        target=[
+            helicopter.position[0]+f[0]*30,
+            helicopter.position[1]+3,
+            helicopter.position[2]+f[2]*30
+        ];
+    }else{
+        // 无人机第一视角：摄像头位于无人机机体前方
+        // 不显示直升机机身，直接从无人机摄像头观察世界。
+        desired=[
+            helicopter.position[0]+f[0]*2.8,
+            helicopter.position[1]+1.2,
+            helicopter.position[2]+f[2]*2.8
+        ];
+
+        target=[
+            helicopter.position[0]+f[0]*120,
+            helicopter.position[1]+5,
+            helicopter.position[2]+f[2]*120
+        ];
+    }
+
+    const s=
+        1-Math.pow(.001,dt);
+
+    camera.position=[
+        lerp(camera.position[0],desired[0],s),
+        lerp(camera.position[1],desired[1],s),
+        lerp(camera.position[2],desired[2],s)
+    ];
+
+    camera.target=[
+        lerp(camera.target[0],target[0],s),
+        lerp(camera.target[1],target[1],s),
+        lerp(camera.target[2],target[2],s)
+    ];
+}
+
+/* =========================
+   绘制
+   ========================= */
+
+function drawMesh(
+    obj,
+    projection,
+    view
+){
+    const mesh=obj.mesh;
+    const program=mesh.program;
+
+    gl.useProgram(program);
+
+    gl.bindBuffer(
+        gl.ARRAY_BUFFER,
+        mesh.vertexBuffer
+    );
+
+    const strideBytes=
+        mesh.stride*4;
+
+    gl.enableVertexAttribArray(
+        mesh.attributes.position
+    );
+
+    gl.vertexAttribPointer(
+        mesh.attributes.position,
+        3,
+        gl.FLOAT,
+        false,
+        strideBytes,
+        0
+    );
+
+    if(program===solidProgram){
+
+        gl.enableVertexAttribArray(
+            mesh.attributes.normal
+        );
+
+        gl.vertexAttribPointer(
+            mesh.attributes.normal,
+            3,
+            gl.FLOAT,
+            false,
+            strideBytes,
+            3*4
+        );
+    }
+
+    gl.enableVertexAttribArray(
+        mesh.attributes.color
+    );
+
+    gl.vertexAttribPointer(
+        mesh.attributes.color,
+        3,
+        gl.FLOAT,
+        false,
+        strideBytes,
+        program===solidProgram ?
+            6*4 :
+            3*4
+    );
+
+    gl.bindBuffer(
+        gl.ELEMENT_ARRAY_BUFFER,
+        mesh.indexBuffer
+    );
+
+    gl.uniformMatrix4fv(
+        mesh.uniforms.projection,
+        false,
+        projection
+    );
+
+    gl.uniformMatrix4fv(
+        mesh.uniforms.view,
+        false,
+        view
+    );
+
+    const model=
+        modelMatrix(
+            obj.position,
+            obj.rotation[0],
+            obj.rotation[1],
+            obj.rotation[2],
+            obj.scale
+        );
+
+    gl.uniformMatrix4fv(
+        mesh.uniforms.model,
+        false,
+        model
+    );
+
+    if(program===solidProgram){
+
+        gl.uniform3f(
+            mesh.uniforms.camera,
+            camera.position[0],
+            camera.position[1],
+            camera.position[2]
+        );
+
+        gl.uniform3f(
+            mesh.uniforms.light,
+            -.45,
+            .85,
+            -.55
+        );
+
+        gl.uniform1f(
+            mesh.uniforms.glow,
+            obj.glow||0
+        );
+    }else{
+        gl.uniform1f(
+            mesh.uniforms.alpha,
+            obj.alpha
+        );
+    }
+
+    gl.drawElements(
+        gl.TRIANGLES,
+        mesh.indexCount,
+        gl.UNSIGNED_SHORT,
+        0
+    );
+}
+
+function drawHelicopter(
+    projection,
+    view
+){
+    const base=modelMatrix(
+        helicopter.position,
+        helicopter.pitch,
+        helicopter.yaw,
+        helicopter.roll,
+        [1,1,1]
+    );
+
+    for(let i=0;i<heliParts.length;i++){
+
+        const p=heliParts[i];
+
+        let local=
+            translationMatrix(
+                p.position[0],
+                p.position[1],
+                p.position[2]
+            );
+
+        local=
+            multiply4(
+                local,
+                rotationY(p.rotation[1])
+            );
+
+        local=
+            multiply4(
+                local,
+                rotationX(p.rotation[0])
+            );
+
+        local=
+            multiply4(
+                local,
+                rotationZ(p.rotation[2])
+            );
+
+        local=
+            multiply4(
+                local,
+                scaleMatrix(
+                    p.scale[0],
+                    p.scale[1],
+                    p.scale[2]
+                )
+            );
+
+        const obj={
+            mesh:p.mesh,
+            position:[0,0,0],
+            rotation:[0,0,0],
+            scale:[1,1,1],
+            glow:0,
+            alpha:1
+        };
+
+        const saved=p.mesh;
+        const fakeWorld={
+            position:[0,0,0],
+            rotation:[0,0,0],
+            scale:[1,1,1],
+            glow:0,
+            alpha:1,
+            mesh:saved
+        };
+
+        drawMesh(
+            {
+                mesh:p.mesh,
+                position:helicopter.position,
+                rotation:[
+                    helicopter.pitch,
+                    helicopter.yaw,
+                    helicopter.roll
+                ],
+                scale:[1,1,1],
+                glow:0,
+                alpha:1,
+                localMatrix:local
+            },
+            projection,
+            view
+        );
+    }
+}
+
+/*
+    为了让直升机零件真正继承机身旋转，
+    单独计算世界矩阵。
+*/
+function drawHeliPart(
+    p,
+    projection,
+    view
+){
+    const mesh=p.mesh;
+
+    gl.useProgram(mesh.program);
+
+    gl.bindBuffer(
+        gl.ARRAY_BUFFER,
+        mesh.vertexBuffer
+    );
+
+    const strideBytes=mesh.stride*4;
+
+    gl.enableVertexAttribArray(
+        mesh.attributes.position
+    );
+
+    gl.vertexAttribPointer(
+        mesh.attributes.position,
+        3,
+        gl.FLOAT,
+        false,
+        strideBytes,
+        0
+    );
+
+    gl.enableVertexAttribArray(
+        mesh.attributes.normal
+    );
+
+    gl.vertexAttribPointer(
+        mesh.attributes.normal,
+        3,
+        gl.FLOAT,
+        false,
+        strideBytes,
+        3*4
+    );
+
+    gl.enableVertexAttribArray(
+        mesh.attributes.color
+    );
+
+    gl.vertexAttribPointer(
+        mesh.attributes.color,
+        3,
+        gl.FLOAT,
+        false,
+        strideBytes,
+        6*4
+    );
+
+    gl.bindBuffer(
+        gl.ELEMENT_ARRAY_BUFFER,
+        mesh.indexBuffer
+    );
+
+    gl.uniformMatrix4fv(
+        mesh.uniforms.projection,
+        false,
+        projection
+    );
+
+    gl.uniformMatrix4fv(
+        mesh.uniforms.view,
+        false,
+        view
+    );
+
+    let local=
+        translationMatrix(
+            p.position[0],
+            p.position[1],
+            p.position[2]
+        );
+
+    local=
+        multiply4(
+            local,
+            rotationY(p.rotation[1])
+        );
+
+    local=
+        multiply4(
+            local,
+            rotationX(p.rotation[0])
+        );
+
+    local=
+        multiply4(
+            local,
+            rotationZ(p.rotation[2])
+        );
+
+    local=
+        multiply4(
+            local,
+            scaleMatrix(
+                p.scale[0],
+                p.scale[1],
+                p.scale[2]
+            )
+        );
+
+    let world=
+        translationMatrix(
+            helicopter.position[0],
+            helicopter.position[1],
+            helicopter.position[2]
+        );
+
+    world=
+        multiply4(
+            world,
+            rotationY(helicopter.yaw)
+        );
+
+    world=
+        multiply4(
+            world,
+            rotationX(helicopter.pitch)
+        );
+
+    world=
+        multiply4(
+            world,
+            rotationZ(helicopter.roll)
+        );
+
+    world=
+        multiply4(
+            world,
+            local
+        );
+
+    gl.uniformMatrix4fv(
+        mesh.uniforms.model,
+        false,
+        world
+    );
+
+    gl.uniform3f(
+        mesh.uniforms.camera,
+        camera.position[0],
+        camera.position[1],
+        camera.position[2]
+    );
+
+    gl.uniform3f(
+        mesh.uniforms.light,
+        -.45,
+        .85,
+        -.55
+    );
+
+    gl.uniform1f(
+        mesh.uniforms.glow,
+        0
+    );
+
+    gl.drawElements(
+        gl.TRIANGLES,
+        mesh.indexCount,
+        gl.UNSIGNED_SHORT,
+        0
+    );
+}
+
+function drawRing(
+    r,
+    projection,
+    view,
+    active
+){
+    const obj={
+        mesh:meshes.ring,
+        position:[
+            r.position[0],
+            r.currentY,
+            r.position[2]
+        ],
+        rotation:[
+            rad(90),
+            r.spin,
+            0
+        ],
+        scale:[1,1,1],
+        glow:active?1:0,
+        alpha:active?1:0.12
+    };
+
+    drawMesh(
+        obj,
+        projection,
+        view
+    );
+}
+
+function drawParticles(
+    projection,
+    view
+){
+    for(const p of particles){
+
+        const obj={
+            mesh:meshes.bullet,
+            position:p.position,
+            rotation:[0,worldTime*4,0],
+            scale:[
+                p.scale*p.life/p.maxLife,
+                p.scale*p.life/p.maxLife,
+                p.scale*p.life/p.maxLife
+            ],
+            glow:1,
+            alpha:1
+        };
+
+        drawMesh(
+            obj,
+            projection,
+            view
+        );
+    }
+}
+
+function drawEverything(){
+    gl.viewport(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    gl.clearColor(
+        .47,
+        .66,
+        .80,
+        1
+    );
+
+    gl.clear(
+        gl.COLOR_BUFFER_BIT |
+        gl.DEPTH_BUFFER_BIT
+    );
+
+    gl.enable(
+        gl.DEPTH_TEST
+    );
+
+    gl.disable(
+        gl.BLEND
+    );
+
+    const projection=
+        perspective(
+            rad(64),
+            canvas.width/canvas.height,
+            .1,
+            18000
+        );
+
+    const view=
+        lookAt(
+            camera.position,
+            camera.target,
+            [0,1,0]
+        );
+
+    for(const o of worldObjects){
+        drawMesh(
+            o,
+            projection,
+            view
+        );
+    }
+
+    for(
+        let i=0;
+        i<ringObjects.length;
+        i++
+    ){
+        drawRing(
+            ringObjects[i],
+            projection,
+            view,
+            ringObjects[i].active
+        );
+    }
+
+    if(cameraMode!==2){
+        drawHelicopterParts(
+            projection,
+            view
+        );
+    }
+
+    for(const e of enemies){
+        if(!e.alive)continue;
+
+        const obj={
+            mesh:meshes.enemy,
+            position:e.position,
+            rotation:[
+                0,
+                e.yaw,
+                0
+            ],
+            scale:[1.8,.5,.8],
+            glow:0,
+            alpha:1
+        };
+
+        drawMesh(
+            obj,
+            projection,
+            view
+        );
+    }
+
+    for(const b of bullets){
+        const obj={
+            mesh:meshes.bullet,
+            position:b.position,
+            rotation:[0,worldTime*9,0],
+            scale:[1,1,1],
+            glow:1,
+            alpha:1
+        };
+
+        drawMesh(
+            obj,
+            projection,
+            view
+        );
+    }
+
+    drawParticles(
+        projection,
+        view
+    );
+}
+
+function drawHelicopterParts(
+    projection,
+    view
+){
+    rotorAngle+=.35;
+
+    for(let i=0;i<heliParts.length;i++){
+
+        const p=heliParts[i];
+
+        let rotation=p.rotation.slice();
+
+        if(
+            i===4 ||
+            i===5
+        ){
+            rotation[1]+=rotorAngle;
+        }
+
+        if(
+            i===6 ||
+            i===7
+        ){
+            rotation[2]+=rotorAngle*1.8;
+        }
+
+        const copy={
+            mesh:p.mesh,
+            position:p.position,
+            rotation:rotation,
+            scale:p.scale
+        };
+
+        drawHeliPart(
+            copy,
+            projection,
+            view
+        );
+    }
+}
+
+/* =========================
+   分辨率
+   ========================= */
+
+function resize(){
+
+    const dpr=
+        Math.min(
+            window.devicePixelRatio||1,
+            1.7
+        );
+
+    canvas.width=
+        Math.max(
+            1,
+            Math.floor(
+                window.innerWidth*dpr
+            )
+        );
+
+    canvas.height=
+        Math.max(
+            1,
+            Math.floor(
+                window.innerHeight*dpr
+            )
+        );
+
+    canvas.style.width=
+        window.innerWidth+"px";
+
+    canvas.style.height=
+        window.innerHeight+"px";
+}
+
+window.addEventListener(
+    "resize",
+    resize
+);
+
+resize();
+
+/* =========================
+   启动按钮
+   ========================= */
+
+document.getElementById(
+    "startBtn"
+).addEventListener(
+    "click",
+    startGame
+);
+
+document.getElementById(
+    "restartBtn"
+).addEventListener(
+    "click",
+    startGame
+);
+
+document.getElementById(
+    "resumeBtn"
+).addEventListener(
+    "click",
+    function(){
+        paused=false;
+        document.getElementById(
+            "pausePanel"
+        ).style.display="none";
+    }
+);
+
+/* =========================
+   开场镜头
+   ========================= */
+
+camera.position=[
+    0,
+    160,
+    520
+];
+
+camera.target=[
+    0,
+    75,
+    -120
+];
+
+/* =========================
+   世界生成
+   ========================= */
+
+createTerrain();
+createLake();
+createMountains();
+createTrees();
+createBuildings();
+createClouds();
+
+resetGame();
+
+/* =========================
+   主循环
+   ========================= */
+
+let lastTime=performance.now();
+
+function animate(now){
+
+    requestAnimationFrame(animate);
+
+    let dt=
+        Math.min(
+            .05,
+            (now-lastTime)/1000
+        );
+
+    lastTime=now;
+
+    worldTime+=dt;
+
+    if(gameStarted && !paused){
+
+        updateFlight(dt);
+
+        updateCheckpoints(dt);
+
+        updateEnemies(dt);
+
+        updateBullets(dt);
+
+        updateParticles(dt);
+
+        if(keys.fire){
+            fire();
+        }
+
+        updateCamera(dt);
+
+        updateHUD();
+
+    }else{
+
+        rotorAngle+=dt*3;
+
+        updateParticles(dt);
+    }
+
+    /*
+        开始菜单时保持一个慢速展示镜头，
+        不会出现空白页面。
+    */
+    if(!gameStarted){
+
+        camera.position=[
+            Math.sin(worldTime*.10)*460,
+            175+
+                Math.sin(worldTime*.17)*12,
+            Math.cos(worldTime*.10)*460
+        ];
+
+        camera.target=[
+            0,
+            70,
+            -100
+        ];
+    }
+
+    drawEverything();
+
+    if(gameStarted){
+        updateMap();
+    }
+}
+
+requestAnimationFrame(
+    animate
+);
+
+})();
+</script>
+
+</body>
+</html>
